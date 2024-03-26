@@ -25,9 +25,9 @@ jobs:
         while read line; do
           if [ ${count} = 0 ] && [[ ${line} =~ "更新履歴" ]]; then
             count=1
-          elif [ ${count} = 1 ] && [[ ${line} =~ "v" ]]; then
+          elif [ ${count} = 1 ] && [[ ${line} =~ "*v" ]]; then
             count=2
-          elif [ ${count} = 2 ] && [[ ${line} =~ "v" ]]; then
+          elif [ ${count} = 2 ] && [[ ${line} =~ "*v" ]]; then
             break
           elif [ ${count} = 2 ]; then
             echo ${line} >> ReleaseNote.txt
