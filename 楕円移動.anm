@@ -1,0 +1,97 @@
+--[[
+    楕円移動.anm
+
+    スライダーの説明
+        回転：回転させる。
+        拡大率：半径を何倍させるか、百分率で入力する。100で1倍。
+        X：X軸方向の半径か、通る点のX座標を入力する。（チェックボックスで何を入力するか切り替わる。）
+        Y：Y軸方向の半径か、通る点のY座標を入力する。（チェックボックスで何を入力するか切り替わる。）
+
+    チェックボックス、xy半径<->xy座標について
+        スライダーX、Yで指定する値の扱い方を変更する。
+        チェックなし：半径指定
+        チェックあり：座標指定
+
+    ダイアログの説明
+        個数：楕円配置する場合、ここで何個描画するか指定する。
+        向き調整：楕円の中心を向くように角度を調整する。
+        扁平率：xy座標で指定するときに利用するパラメータ。扁平率は[0,1)だが、ここでは負の値も入力可能。
+        正の値：X軸方向につぶす。
+        負の値：Y軸方向につぶす。
+        扁平率_提案：いい感じの扁平率にする。
+        計算用個数：扁平率_提案で使う計算用個数を指定する。空白で通常の個数を利用する。3以上の整数で指定。
+        符号反転：扁平率_提案によって計算された扁平率の符号を反転する。
+        扁平率表示：扁平率_提案によって計算された扁平率をフレームバッファとコンソールに表示する。
+    by Korarei
+]]
+
+--track0:回転,-3600,3600,0
+--track1:拡大率,0,1000,100
+--track2:X,-4000,4000,0
+--track3:Y,-4000,4000,0
+--check0:xy半径<->xy座標,0
+--dialog:個数,_1=1;向き調整/chk,_2=0;扁平率(-1，1),_3=0;扁平率_提案/chk,_4=0;└計算用個数,_5=nil;└符号反転/chk,_6=0;└扁平率表示/chk,_7=0;
+
+local chk, mes = pcall(function()
+local cos, sin, tan, atan2, min, rad, deg, sqrt, abs, floor = math.cos, math.sin, math.tan, math.atan2, math.min, math.rad, math.deg, math.sqrt, math.abs, math.floor
+local PI = math.pi
+
+local rotation_d = obj.track0
+local scale = obj.track1 / 100
+local x = obj.track2
+local y = obj.track3
+local check_change = obj.check0
+local n = floor(_1) _1 = nil
+local check_direction = _2 == 1 _2 = nil
+local oblateness = _3 _3 = nil
+local check_oblateness = _4 == 1 _4 = nil
+local n_cal = _5 _5 = nil
+local check_sign_inverted = _6 == 1 _6 = nil
+local check_display = _7 == 1 _7 = nil
+assert(n >= 1, "個数は1以上の整数で入力してください。")
+
+if check_change and check_oblateness then
+    if x == 0 then
+        error("x=0の時、扁平率_提案機能は使用できません。")
+    elseif not n_cal and n < 3 then
+        error("個数は3以上の整数で入力してください。")
+    elseif n_cal and n_cal < 3 then
+        error("計算用個数は3以上の整数で入力してください。")
+    end
+    n_cal = n_cal and floor(n_cal) or n
+    if check_sign_inverted then
+        oblateness = 1 - abs(y / x * tan(PI / n_cal))
+    else
+        oblateness = abs(y / x * tan(PI / n_cal)) - 1
+    end
+    if oblateness <= -1 or 1 <= oblateness then
+        error("扁平率が開区間(-1,1)外になりました。扁平率_提案機能は使用できません。")
+    end
+end
+assert(oblateness > -1 and oblateness < 1, "扁平率は開区間(-1,1)で入力してください。")
+
+if check_oblateness and check_display then
+    print("扁平率："..tostring(oblateness))
+    setfont("游ゴシック",50)
+    obj.load("text","扁平率："..tostring(oblateness))
+    obj.draw()
+else
+    --座標と扁平率を使って半径を計算
+    local a = check_change and sqrt(x ^ 2 + y ^ 2 * (min(1 - oblateness, 1) / min(1 + oblateness, 1)) ^ 2) or abs(x)
+    local b = check_change and sqrt(x ^ 2 * (min(1 + oblateness, 1) / min(1 - oblateness, 1)) ^ 2 + y ^ 2) or abs(y)
+
+    --楕円配置
+    for i = 1, n do
+        local rotation_r = check_change and rad(rotation_d) + atan2(a * y, b * x) + PI * 2 * i / n or rad(rotation_d) + PI * 2 * i / n
+        local rz = check_direction and 90 + deg(rotation_r) or 0
+
+        obj.draw(scale * a * cos(rotation_r), scale * b * sin(rotation_r), 0, 1, 1, 0, 0, rz)
+    end
+end
+end)
+if not chk then
+    setfont("游ゴシック",50)
+    obj.load("text", "[楕円移動.anm]\n"..mes)
+    obj.draw()
+    error("[楕円移動.anm]"..mes)
+end
