@@ -1,0 +1,2 @@
+# AviUtl_EllipseMovement_Script
+座標または半径を指定して楕円移動させたり、楕円配置させたりするAviUtlスクリプト
